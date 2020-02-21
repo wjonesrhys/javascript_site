@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option selected value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="book_detail" style="display:block;">Please enter the ISBN or Title of the book you want to check availability for: </label>
+        <input type="text" id="book_detail"/>
+        <input type="button" value="Check Book Availability" id="book_status" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allbooks">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //A function that searches for a user and checks
+  function searchForUser(book_found) {
+    //Because you only have one result due to book uniqueness you can grab the result.
+    var book = book_found[0];
+
+    var book_already_loaned = false;
+
+    //Get all loans
+    request.makeAPIRequest("GET", "/loans/")
+    .then(function(loans){
+      var loan_entries = JSON.parse(loans);
+      loan_entries.forEach(function(loan){
+        //Check to see if the loans BookId and books id are equal
+        if (loan.BookId === book.id) {
+          //Update the UI with the user it's loaned to.
+          request.updateSingleOutput("Book: Title: " + book.title + ", ISBN: " + book.isbn, formoutput);
+          request.makeAPIRequest("GET", "/users/" + loan.UserId)
+          .then(function(user){
+            var parsed_user = JSON.parse(user);
+            //Convert the date into a readable string.
+            date = new Date(loan.dueDate);
+            due_date = date.getDate() + '-' + (date.getMonth()+1) + '-' +date.getFullYear();
+            //Update the UI with the book that is loaned by that user.
+            request.addListItem("Book already loaned by: Name: " + parsed_user.name + ", Barcode: " + parsed_user.barcode + ", Due Date: " + due_date, formoutput);
+            request.updateData("books", allbooks);
+          })
+          //Change to true so that the next if statement isn't carried out.
+          book_already_loaned = true;
+        }
+      })
+
+      //If a book hasn't already been found link to any existing loans then carry out this piece of code.
+      if (!book_already_loaned) {
+        request.updateSingleOutput("Book: Title: " + book.title + ", ISBN: " + book.isbn, formoutput);
+        request.addListItem("Is available", formoutput);
+        //Update the books from the database that are shown on the UI.
+        request.updateData("books", allbooks);
+      }
+    })
+  }
+
+  //An event listener added to the Check Book Availability button to action when clicked.
+  document.querySelector('#book_status').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var book_detail =  document.getElementById("book_detail").value;
+
+    //Set up the parameters to search for a book by isbn and title.
+    let byISBN = {
+      type: "book",
+      isbn: book_detail
+    };
+
+    let byTitle = {
+      type: "book",
+      title: book_detail
+    };
+
+    //Check for a valid text input.
+    if (book_detail) {
+      //Search for a user by isbn and title.
+      Promise.all([request.searchDatabase(byISBN), request.searchDatabase(byTitle)])
+      .then(function(results){
+        //Separate out the requests results.
+        var isbn_results = JSON.parse(results[0]);
+        var title_results = JSON.parse(results[1]);
+
+        //Check if both return 0 results.
+        if (isbn_results.length == 0 && title_results.length == 0) {
+          request.updateSingleOutput("Book doesn't exist", formoutput);
+        }
+
+        //If there are results from either search then search for the user.
+        if (isbn_results.length > 0) {
+          searchForUser(isbn_results);
+        }
+
+        if (title_results.length > 0) {
+          searchForUser(title_results);
+        }
+      })
+    } else {
+      //Update the UI if the inputs are invalid.
+      request.updateSingleOutput("Invalid inputs, please try again.", formoutput);
+    }
+  });
+
+  //Add both the current books to the user interface when the page is loaded to aid the user.
+  request.updateData("books", allbooks);
+
+  </script>
+
+</body>
+</html>

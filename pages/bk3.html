@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Bookings">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Booking</option>
+            <option selected value="bk3.html">Remove Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="user_barcode">Please enter the Barcode of the User you want to remove the booking for: </label>
+        <input type="text" id="user_barcode"/>
+
+        <input type="button" value="Remove Booking" id="remove_booking" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allusers">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+  var allusers = document.getElementById('allusers');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Remove Booking button to action when clicked.
+  document.querySelector('#remove_booking').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var user_barcode = document.getElementById("user_barcode").value;
+
+    //Check to see if the inputs are valid.
+    if (user_barcode) {
+      //Get all users including the Booking parameter.
+      request.makeAPIRequest("GET", "/users?allEntities=true")
+      .then(function(results){
+        var user_results = JSON.parse(results);
+        user_results.forEach(function(user){
+          //If a user in the database matches the barcode inputted.
+          if (user_barcode == user.barcode) {
+            //If the user has a booking associated with it (it's not null)
+            if (user.Booking) {
+              //Because user can only have one booking, split the bookings timeBooked into days and time.
+              var split_date = request.splitDate(user.Booking.timeBooked);
+              //Remove the booking and get the room that was booked.
+              Promise.all([request.makeAPIRequest("DELETE", "/bookings/" + user.Booking.id), request.makeAPIRequest("GET", "/rooms/" + user.Booking.RoomId)])
+              .then(function(both_results){
+                var room = JSON.parse(both_results[1]);
+                //Update the UI with the room and the booking time that has been removed.
+                request.updateSingleOutput("The booking for the " + room.name + " room on " + split_date[0] + " at " + split_date[1] + " has been removed.", formoutput);
+              })
+            } else {
+              //If the user doesn't have a booking currently, update the UI with this.
+              request.updateSingleOutput(user.name + " doesn't have a booking currently.", formoutput);
+            }
+          }
+        })
+      })
+    } else {
+      //Update the UI with this if any inputs are invalid.
+      request.updateSingleOutput("Invalid input, please check the users barcode.", formoutput);
+    }
+  });
+
+  //Add the current users to the user interface when the page is loaded to aid the user.
+  request.updateData("users", allusers);
+  </script>
+
+</body>
+</html>

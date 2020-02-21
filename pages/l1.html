@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option selected value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="user_barcode">Please enter the Barcode of the User wanting to loan the book: </label>
+        <input type="text" id="user_barcode"/>
+
+        <label for="book_detail">Please enter the ISBN of the book: </label>
+        <input type="text" id="book_detail">
+
+        <label for="due_date">Please enter the due date of the loan: </label>
+        <input type="date" id="due_date">
+        <input type="button" value="Loan Book" id="loan_book" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allbooks">
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>More Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allusers">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+  var allbooks = document.getElementById('allbooks');
+  var allusers = document.getElementById('allusers');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Loan Book button to action when clicked.
+  document.querySelector('#loan_book').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var user_barcode = document.getElementById("user_barcode").value;
+    var book_detail =  document.getElementById("book_detail").value;
+    var due_date = document.getElementById("due_date").value;
+
+    //Set up the parameters to search for a user by barcode.
+    let byUser = {
+      type: "user",
+      barcode: user_barcode
+    };
+
+    //Set up the parameters to search for a book by ISBN.
+    let byISBN = {
+      type: "book",
+      isbn: book_detail
+    };
+
+    //Set up the dueDate parameter to be sent when a loan is added to the system
+    let date = {
+      dueDate: due_date
+    };
+
+    //Get the present date to compare with
+    var current_date = new Date();
+    var isFutureDate = true;
+
+    //Make sure the due date is in the future (next day and onwards).
+    if (current_date >= new Date(due_date)) {
+      isFutureDate = false;
+    }
+
+    //Make sure all inputs are valid.
+    if (user_barcode && book_detail && due_date && isFutureDate) {
+      //Search by both User and ISBN
+      Promise.all([request.searchDatabase(byUser), request.searchDatabase(byISBN)])
+      .then(function(results){
+        //Separate out the results of both requests.
+        var user_results = JSON.parse(results[0])
+        var book_results = JSON.parse(results[1])
+
+        //Make sure that at least one item is returned for both searches.
+        if (user_results.length == 0 || book_results.length == 0) {
+          //Output this if one search returns 0 results.
+          request.updateSingleOutput("Either the book or user aren't on the system, please try again.", formoutput);
+        } else {
+          //because of barcode and ISBN uniqueness, we can take the first result of both.
+          var user = user_results[0];
+          var book = book_results[0];
+          var book_already_loaned = false;
+          //Get all loans.
+          request.makeAPIRequest("GET", "/loans/")
+          .then(function(loans) {
+            var loan_results = JSON.parse(loans)
+            //Check to see if the book is already loaned by comparing loans BookId to the books id.
+            loan_results.forEach(function(loan){
+              if (loan.BookId === book.id) {
+                book_already_loaned = true;
+              }
+            });
+            if (!book_already_loaned) {
+              //Add a new loan to the system if a loan doesn't already exist for the book and get the users details with a separate request.
+              Promise.all([request.makeAPIRequest("POST", "/users/" + user.id + "/loans/" + book.id, date), request.makeAPIRequest("GET", "/users/" + user.id)])
+              .then(function(request_responses){
+                //Parse the user returned
+                var user_loaned_to = JSON.parse(request_responses[1]);
+                //Update the UI with the result of the request.
+                request.updateSingleOutput("Book Loaned: Title: " + book.title + ", ISBN: " + book.isbn, formoutput);
+                request.addListItem("To: Name: " + user_loaned_to.name + ", Barcode: " + user_loaned_to.barcode, formoutput);
+              })
+            } else {
+              //If the book's already loaned, update UI with this text.
+              request.updateSingleOutput("Book is already loaned to another user.", formoutput);
+            }
+          });
+        }
+      });
+    } else {
+      //If any inputs are invalid, update the UI with this text.
+      request.updateSingleOutput("Invalid inputs, please check them all, making sure the due date is in the future.", formoutput);
+    }
+  });
+
+  //Add both the current users and books to the user interface when the page is loaded to aid the user.
+  request.updateData("books", allbooks);
+  request.updateData("users", allusers);
+  </script>
+
+</body>
+</html>

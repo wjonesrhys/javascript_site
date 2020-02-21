@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Bookings">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Booking</option>
+            <option value="bk3.html">Remove Booking</option>
+            <option selected value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="room">Please enter the name of the room you want to check bookings for: </label>
+        <input type="text" id="room"/>
+
+        <label for="booking_date">Please enter the date you want to check for availability of the room : </label>
+        <input type="date" id="booking_date">
+
+        <input type="button" value="Check Room Availability" id="check_room_availability" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allrooms">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+  var allrooms = document.getElementById('allrooms');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //Return a readable string containing all the available times.
+  var giveTimes = function(all_times) {
+    var times = "";
+    all_times.forEach(function(time){
+      times += time + ":00 ";
+    })
+    return times;
+  }
+
+  //An event listener added to the Check Room Availability button to action when clicked.
+  document.querySelector('#check_room_availability').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var room_selected = document.getElementById("room").value;
+    var booking_date = document.getElementById('booking_date').value;
+
+    //Get the present date to compare with
+    var current_date = new Date();
+    var isFutureDate = true;
+
+    //Make sure the due date is in the future (next day and onwards).
+    if (current_date >= new Date(booking_date)) {
+      isFutureDate = false;
+    }
+
+    if (!room_selected) {
+      request.updateSingleOutput("Invalid room input, please make sure you use an existing room.", formoutput);
+    } else if (!booking_date || !isFutureDate) {
+      request.updateSingleOutput("Invalid date input, please make sure you've inputted a date and it's a future date.", formoutput);
+    } else {
+      //Get all rooms with the Bookings parameter.
+      request.makeAPIRequest("GET", "/rooms?allEntities=true")
+      .then(function(results){
+        var rooms = JSON.parse(results);
+        rooms.forEach(function(room){
+          //Check to see if any of the rooms returned equal the one being searched for.
+          if (room.name == room_selected) {
+            var bookings = room.Bookings;
+
+            //Make sure bookings isn't null before looping through.
+            if (bookings) {
+              //Set up an array that consists of all times one can book a room for.
+              var times = ["09", "10", "11", "12", "13", "14", "15", "16", "17"];
+              bookings.forEach(function(booking){
+                //Split each booking's timeBooked into UK format readable days and time.
+                var readable_date = request.splitDate(booking.timeBooked);
+                //Split to get the format similar to the date entered so that it's comparable.
+                var split_date = (booking.timeBooked).split('T');
+                var days = split_date[0];
+
+                //Check for any bookings for the day entered by seeing if the inputted date equals any of the bookings dates.
+                if (days === booking_date) {
+                  var hours_mins = readable_date[1].split(':');
+                  var hour = hours_mins[0];
+
+                  //Remove all times from the array that have already been booked for that day.
+                  if (times.includes(hour)) {
+                    var index = times.indexOf(hour);
+                    times.splice(index, 1);
+                  }
+                }
+              })
+              //Update the UI with all the times that are available for that room on that day.
+              request.updateSingleOutput("Times available for the " + room.name + " room are: " + giveTimes(times), formoutput);
+            }
+          }
+        })
+      })
+    }
+  });
+
+  //Add the current rooms to the user interface when the page is loaded to aid the user.
+  request.updateData("rooms", allrooms);
+  </script>
+
+</body>
+</html>

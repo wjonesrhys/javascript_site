@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option selected value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="barcode"> Users barcode: </label>
+        <input type="text" id="barcode">
+
+        <input type="button" value="Delete User Details" id="delete_user_details" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allusers">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+  var allusers = document.getElementById('allusers');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Delete User Details button to action when clicked.
+  document.querySelector('#delete_user_details').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var barcode = document.getElementById('barcode').value;
+
+    //Make sure the parameter are set up based on the detail you you want to search for a user by.
+    let byBarcode  = {
+      type : 'user',
+      barcode : barcode
+    }
+
+    //Check the user has entered a barcode.
+    if (barcode) {
+      //Search the database for a user by barcode.
+      request.searchDatabase(byBarcode)
+      .then(function(user_returned){
+        var barcode_entries = JSON.parse(user_returned);
+        console.log(barcode_entries);
+        //Make sure a user is returned from the search.
+        if (barcode_entries.length > 0) {
+          user = barcode_entries[0];
+          //Get the users loan if there is one.
+          Promise.all([request.makeAPIRequest("GET", "/users/" + user.id + "/loans"), request.makeAPIRequest("GET", "/bookings")])
+          .then(function(results){
+            var user_loans = JSON.parse(results[0]);
+            var bookings = JSON.parse(results[1]);
+            // Make sure that both bookings and user_loans aren't empty before looping their respective results them.
+            if (bookings.length > 0) {
+              bookings.forEach(function(booking){
+                //Check for existing null references in bookings or any that match with the users id
+                if (!booking.UserId || booking.UserId == user.id) {
+                  //Alongside deleting the user, make sure any room bookings made are removed.
+                  request.makeAPIRequest("DELETE", "/bookings/" + booking.id)
+                }
+              })
+            }
+            if (user_loans.length > 0) {
+              user_loans.forEach(function(loan){
+                //Alongside deleting the user, make sure the loaned Book and relevant Loan is removed.
+                Promise.all([request.makeAPIRequest("DELETE", "/books/" + loan.BookId), request.makeAPIRequest("DELETE", "/loans/" + loan.id)])
+              })
+            }
+            //Remove the user.
+            request.makeAPIRequest("DELETE", "/users/" + user.id)
+            .then(function(){
+              //Update the UI with the user removed and an updated list of users in the database.
+              request.updateSingleOutput("Removed User: Name: " + user.name + ", Barcode: " + user.barcode + ", Member Type: " + user.memberType, formoutput);
+              request.updateData("users", allusers);
+            })
+          })
+        } else {
+          //Update the UI if the user exists.
+          request.updateSingleOutput("User with that barcode doesn't exist, please try again!", formoutput);
+        }
+      });
+    } else {
+      //Update the UI if the input isn't valid.
+      request.updateSingleOutput("Please enter a valid barcode", formoutput);
+    }
+  });
+
+  //Add current users to the user interface when the page is loaded.
+  request.updateData("users", allusers);
+  </script>
+
+</body>
+</html>

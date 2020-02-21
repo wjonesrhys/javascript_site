@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option selected value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="input_text" style="display:block;">Please enter the Title or ISBN of the Book you'd like to remove: </label>
+        <input type="text" id="input_text"/>
+        <input type="button" value="Remove Book" id="remove_book" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allbooks">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+  var allbooks = document.getElementById('allbooks');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Remove Book button to action when clicked.
+  document.querySelector('#remove_book').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var input_text = document.getElementById('input_text').value;
+
+    var bookCount = 0;
+
+    //Check the user has inputted to the relevant fields.
+    if (input_text) {
+      //Get books using the allEntities param to get authors included too
+      request.makeAPIRequest("GET", "/books?allEntities=true")
+      .then(function(books){
+        var book_entries = JSON.parse(books);
+        //Check to make sure there are books returned before looping through them
+        if (book_entries.length > 0) {
+          book_entries.forEach(function(book){
+            //Check to see if the books title or isbn equals the input.
+            if (book.title === input_text || book.isbn === input_text) {
+              //Update the UI for the book about to be removed.
+              request.updateSingleOutput("Book Removed: Title: " + book.title + ", ISBN: " + book.isbn, formoutput);
+              //Remove the book from the database.
+              request.makeAPIRequest("DELETE", "/books/" + book.id)
+              .then(function(result) {
+                //Get all authors with the params Books included.
+                request.makeAPIRequest("GET", "/authors?allEntities=true")
+                .then(function(authors){
+                  var authors_list = JSON.parse(authors);
+                  authors_list.forEach(function(author){
+                    //If the author doesn't have any books in the database linked to it, remove the author.
+                    if (author.Books.length == 0) {
+                      request.makeAPIRequest("DELETE", "/authors/" + author.id)
+                    }
+                  })
+                })
+
+                //Get all loans
+                request.makeAPIRequest("GET", "/loans")
+                .then(function(loans){
+                  var loans_list = JSON.parse(loans);
+                  loans_list.forEach(function(loan){
+                    //If any of the loans now have a BookId of null, then also remove them from the system.
+                    if (loan.BookId === null) {
+                      request.makeAPIRequest("DELETE", "/loans/" + loan.id)
+                    }
+                  })
+                  //After everything, update the UI to the books still in the system.
+                  request.updateData("books", allbooks);
+                })
+              })
+              //Update bookCount when a book is matched to provide the correct output
+              bookCount += 1;
+            }
+          })
+        }
+
+        if (bookCount === 0) {
+          //Update the UI if no books are returned relevant to the user input.
+          request.updateSingleOutput("No books exists on the database for that input", formoutput);
+        }
+      })
+    } else {
+      //Update the UI if the input isn't valid.
+      request.updateSingleOutput("Please enter a valid title or ISBN.", formoutput);
+    }
+  });
+
+  //Add current books to the user interface when the page is loaded.
+  request.updateData("books", allbooks);
+  </script>
+
+</body>
+</html>

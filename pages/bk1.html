@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Bookings">
+            <option selected value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Booking</option>
+            <option value="bk3.html">Remove Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="user_barcode">Please enter the Barcode of the User wanting to book the room: </label>
+        <input type="text" id="user_barcode"/>
+
+        <label for="room">Please enter the name of the room you'd like to book: </label>
+        <input type="text" id="room"/>
+
+        <label for="booking_date">Please enter the date you want to book the room for : </label>
+        <input type="date" id="booking_date">
+
+        <label for="booking_time">Please choose the hour you'd like to book the room for (Between 9:00am - 17:00pm):</label>
+        <input type="time" id="booking_time" name="appt" min="09:00" max="17:00" step="3600" required>
+        <input type="button" value="Book Room" id="book_room" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allrooms">
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>More Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allusers">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+  var allrooms = document.getElementById('allrooms');
+  var allusers = document.getElementById('allusers');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Book Room button to action when clicked.
+  document.querySelector('#book_room').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var user_barcode = document.getElementById("user_barcode").value;
+    var room =  document.getElementById("room").value;
+    var booking_date = document.getElementById("booking_date").value;
+    var booking_time = document.getElementById("booking_time").value;
+
+    //Convert inputs into a string that can be passed into a Date
+    var booking_string = booking_date + "T" + booking_time + ":00.000Z";
+
+    var current_date = new Date();
+    var isFutureDate = true;
+
+    //Set up the parameters to search for a user by barcode.
+    let byUser = {
+      type: "user",
+      barcode: user_barcode
+    };
+
+    //Set up the parameters to search for a room by name.
+    let byRoom = {
+      type: "room",
+      name: room
+    };
+
+    //Set up the timeBooked parameter to be sent with the request to add a booking to the system.
+    let addBooking = {
+      timeBooked: booking_date + "T" + booking_time
+    };
+
+    //Check to see if the date entered is a future date.
+    if (current_date >= new Date(booking_date + "T" + booking_time)) {
+      isFutureDate = false;
+    }
+
+    //Check for invalid inputs.
+    if (user_barcode && room && booking_date && booking_time && isFutureDate) {
+      //Search by user, room and get all bookings
+      Promise.all([request.searchDatabase(byUser), request.searchDatabase(byRoom), request.makeAPIRequest("GET", "/bookings")])
+      .then(function(results){
+        var room_time_booked = false;
+        var user_already_booked = false;
+
+        //Separate out all the results.
+        var user_results = JSON.parse(results[0]);
+        var room_results = JSON.parse(results[1]);
+        var booking_results = JSON.parse(results[2]);
+
+        //Check if both requests return and room and user.
+        if(user_results.length > 0 && room_results.length > 0) {
+          var user = user_results[0];
+          var room = room_results[0];
+
+          //Loop through all bookings
+          booking_results.forEach(function(booking){
+            //If the booking's RoomId matches the room found and the timeBooked is the same as the one entered then the room is booked for that time already.
+            if (room.id == booking.RoomId && booking.timeBooked == booking_string) {
+              room_time_booked = true;
+            }
+
+            //If the users id matches the UserId of any of the bookings then the user has already got a booking.
+            if (booking.UserId == user.id) {
+              user_already_booked = true;
+            }
+          })
+
+          if (user_already_booked) {
+            request.updateSingleOutput(user.name + " has already booked a room, please try again.", formoutput);
+          } else if (room_time_booked) {
+            request.updateSingleOutput(room.name + " has been booked for that date and time, please try a different one or check available times.", formoutput);
+          } else {
+            //If user doesn't already have a room booked and the room time isn't already booked.
+            //Add the new booking to the system using a POST request and get the relevant users details also.
+            Promise.all([request.makeAPIRequest("POST", "/users/" + user.id + "/bookings/" + room.id, addBooking), request.makeAPIRequest("GET", "/users/" + user.id)])
+            .then(function(request_responses){
+              var user_booked = JSON.parse(request_responses[1]);
+              //Update the UI with the room loaned and the user who loaned it.
+              request.updateSingleOutput("Room Loaned: Name: " + room.name + ", Booking Date: " + booking_date + ", and Booking Time: " + booking_time, formoutput);
+              request.addListItem("To: Name: " + user_booked.name + ", Barcode: " + user_booked.barcode, formoutput);
+            });
+          }
+          //If either of the results returned nothing then the user or room doesn't exist, output to the UI accordingly.
+        } else if (user_results.length == 0){
+          request.updateSingleOutput("User with that barcode doesn't exist, please try again.", formoutput);
+        } else if (room_results.length == 0){
+          request.updateSingleOutput("Room with that name doesn't exist, please try again.", formoutput);
+        }
+      });
+    } else {
+      //Output relevant text if the inputs are invalid.
+      request.updateSingleOutput("Invalid inputs, please check them all, making sure the booking date is in the future.", formoutput);
+    }
+  });
+
+  //Add both the current users and rooms to the user interface when the page is loaded to aid the user.
+  request.updateData("rooms", allrooms);
+  request.updateData("users", allusers);
+
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option selected value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="user_barcode">Please enter the Barcode of the User you want to see current loans for: </label>
+        <input type="text" id="user_barcode"/>
+        <input type="button" value="Search Loans" id="look_for_loans" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Look for Loans button to action when clicked.
+  document.querySelector('#look_for_loans').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var user_barcode = document.getElementById("user_barcode").value;
+
+    var totalUsersLoans = 0;
+
+    //Set up the parameters to search for a user by barcode.
+    let byUser = {
+      type: "user",
+      barcode: user_barcode
+    };
+
+    //Make sure the barcode input is valid.
+    if (user_barcode) {
+      //Search the database by user and get all loans at the same time.
+      Promise.all([request.searchDatabase(byUser), request.makeAPIRequest("GET", "/loans/")])
+      .then(function(results){
+        //Separate out the results.
+        var user = JSON.parse(results[0]);
+        var loans = JSON.parse(results[1]);
+        //Check to see if both a user and loan has been returned.
+        if (user.length == 0 || loans.length == 0) {
+          //Update the UI with relevant information if not.
+          request.updateSingleOutput("Either user isn't on the system or there aren't any loans currently present.", formoutput);
+        } else {
+          //Select the first user through barcode uniqueness.
+          var user_found = user[0];
+          //Output the user to the UI
+          request.updateSingleOutput("User: Name: " + user_found.name + ", Barcode: " + user_found.barcode, formoutput);
+          request.addListItem("Loans: ", formoutput);
+          loans.forEach(function(loan){
+            //Check if the loan belongs to the user.
+            if (loan.UserId === user_found.id) {
+              //Get the book that the loan is associated with
+              request.makeAPIRequest("GET", "/books/" + loan.BookId)
+              .then(function(book){
+                var book_found = JSON.parse(book);
+                //Change the loans due date into a readable string (adding and taking 1 where necessary to count for timezones.)
+                var date = new Date(loan.dueDate);
+                var due_date = (date.getDate()-1) + '-' + (date.getMonth()+1) + '-' +date.getFullYear();
+                //Output the book associated with the loan to the UI
+                request.addListItem("Book Title: " + book_found.title + ", ISBN: " + book_found.isbn + ", Due Date: " + due_date, formoutput);
+              })
+              //Increment the total loans matched to check that there is at least one output later on.
+              totalUsersLoans += 1;
+            }
+          })
+          if (totalUsersLoans === 0) {
+            //If the user doesn't have a book on loan currently, update the UI with this text.
+            request.updateSingleOutput("User currently doesn't have any books on loan.", formoutput);
+          }
+        }
+      })
+    } else {
+      //If the barcode input is invalid, update the UI with this text.
+      request.updateSingleOutput("Invalid input, please try again.", formoutput);
+    }
+  });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option selected value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="search_type">Select how you would like to search for a book: </label>
+        <select name="search_type" id="search_type">
+          <option disabled selected value> -- select an option -- </option>
+          <option value="title">Title</option>
+          <option value="author">Author</option>
+        </select>
+
+        <label for="input_text" id="phrase">Please select above how you would like to search first :)</label>
+        <input disabled type="text" id="input_text"/>
+
+        <input type="button" value="Search for a Book" id="book_search" class="button">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //Get form elements.
+  var search_type = document.getElementById('search_type');
+  var phrase = document.getElementById("phrase");
+  search_type.addEventListener('change', function(){
+    if (search_type.value === "title"){
+      //Change the label text based on the search type.
+      phrase.innerHTML = "Please enter a title: ";
+    }
+    if (search_type.value === "author"){
+      phrase.innerHTML = "Please enter an author: ";
+    }
+    //Enable the input field once a search type has been selected.
+    document.getElementById("input_text").disabled = false;
+  });
+
+  //An event listener added to the Book Search button to action when clicked.
+  document.querySelector('#book_search').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var input_text = document.getElementById('input_text').value;
+    var search_type = document.getElementById('search_type').value;
+
+    //Set up the parameters to search for an author by name.
+    let byAuthor = {
+      type : "author",
+      name : input_text
+    };
+
+    //Check the user has inputted text to search with.
+    if (input_text) {
+      //Check how you want to search, by author or title.
+      if (search_type === "title") {
+        //Get all books.
+        request.makeAPIRequest("GET", "/books")
+        .then(function(books){
+          var book_entries = JSON.parse(books);
+          //Check that there is at least a book in the system to search against.
+          if (book_entries.length > 0) {
+            //Use a book count to record if at least one book has already been matched.
+            var bookCount = 0
+            //Empty the output first.
+            formoutput.innerHTML = "";
+            request.addListItem("Result: ", formoutput);
+            book_entries.forEach(function(book){
+              if (book.title === input_text) {
+                //Update the UI to show the books found.
+                request.addListItem('Book Found: Title: ' + book.title + ', ISBN: ' + book.isbn, formoutput);
+                bookCount += 1;
+              }
+            });
+            //If no book exists, update the UI to say this.
+            if (bookCount === 0) {
+              request.updateSingleOutput("No books exist for this search.", formoutput);
+            }
+          }
+        })
+      }
+
+      if (search_type === "author") {
+        //Search for an author by name.
+        request.searchDatabase(byAuthor)
+        .then(function(authors_matched){
+          var authors = JSON.parse(authors_matched);
+          //Check to see if an author exists.
+          if (authors.length > 0) {
+            //Empty the output first and add the title of the result.
+            formoutput.innerHTML = "";
+            request.addListItem("Books Found: ", formoutput);
+
+            //Cycle through all authors.
+            authors.forEach(function(author){
+              //Get the author including the authors books parameter.
+              request.makeAPIRequest("GET", "/authors/" + author.id + "?allEntities=true")
+              .then(function(author_returned){
+                author = JSON.parse(author_returned);
+                if (author.Books.length > 0) {
+                  //For each book, output the title, isbn and name.
+                  author.Books.forEach(function(book) {
+                    request.addListItem('Title: ' + book.title + ', ISBN: ' + book.isbn + ', Authors: ' + author.name, formoutput);
+                  })
+                } else {
+                  //If the author has no books, output this.
+                  request.updateSingleOutput(author.name + " has no books currently in the database.", formoutput);
+                }
+              })
+            })
+          } else {
+            //If no authors are returned from the search, output authors don't exist.
+            request.updateSingleOutput("No authors exist in the database with this name.", formoutput);
+          }
+        })
+      }
+    } else {
+      //Update the UI if the input isn't valid.
+      request.updateSingleOutput("Please enter valid inputs.", formoutput);
+    }
+  });
+
+  </script>
+
+</body>
+</html>

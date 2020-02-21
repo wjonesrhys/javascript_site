@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="./index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+
+        <select name="task_selected" id="task_selected">
+          <option disabled selected value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="./pages/u1.html">Add a User</option>
+            <option value="./pages/u2.html">Get User's Details</option>
+            <option value="./pages/u3.html">Update a User</option>
+            <option value="./pages/u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="./pages/b1.html">Add a Book</option>
+            <option value="./pages/b2.html">Get Book Details</option>
+            <option value="./pages/b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="./pages/l1.html">Loan a Book</option>
+            <option value="./pages/l2.html">Get User's Current Loans</option>
+            <option value="./pages/l3.html">Get User Borrowing a Book</option>
+          </optgroup>
+          <optgroup label="Bookings">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="./pages/a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>The form that needs to be filled in with the relevant details will appear here.</h4>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Relevant data needed to help you with requests will appear here</h4>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script>
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+  </script>
+
+</body>
+</html>

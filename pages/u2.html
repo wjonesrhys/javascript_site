@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option selected value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Check Book Availability</option>
+          </optgroup>
+          <optgroup label="Rooms">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Bookings</option>
+            <option value="bk3.html">Remove a Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt input">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="search_type">Search by:</label>
+        <select name="search_type" id="search_type">
+          <option disabled selected value> -- select an option -- </option>
+          <option value="name">Name</option>
+          <option value="barcode">Barcode</option>
+        </select>
+
+        <label for="user_detail">User Detail:</label>
+        <input type="text" id="user_detail">
+
+        <input type="button" value="Get User Details" class="button" id="get_user_details">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Get User Details button to action when clicked.
+  document.querySelector('#get_user_details').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var user_detail_entered = document.getElementById("user_detail").value;
+    var search_type_chosen = document.getElementById("search_type").value;
+
+    var byUser = {};
+
+    //Define the details to post based on the search input type.
+    if (search_type_chosen === "name") {
+      byUser = {
+        type : "user",
+        name : user_detail_entered
+      };
+    }
+
+    if (search_type_chosen === "barcode") {
+      byUser = {
+        type : "user",
+        barcode : user_detail_entered
+      };
+    }
+
+    //Check whether the user has at least entered something in all fields
+    if (user_detail_entered && search_type_chosen) {
+      //Search for the user by a detail.
+      request.searchDatabase(byUser)
+      .then(function(users){
+        var user_entries = JSON.parse(users);
+        if (user_entries.length > 0) {
+          //Clear the output
+          formoutput.innerHTML = "";
+          //Add a list item with the title based on the length of the results given back.
+          if (user_entries.length === 1){
+            request.addListItem("User Found: ", formoutput);
+          } else {
+            request.addListItem("Users Found: ", formoutput);
+          }
+          user_entries.forEach(function(user){
+            //Adds a list item to the UI output with text for each user.
+            request.addListItem("Name: " + user.name + ", Barcode: " + user.barcode + ", Member Type: " + user.memberType, formoutput);
+          })
+        } else {
+          //Update the user interface if the user doesn't exist.
+          request.updateSingleOutput("User \'" + user_detail_entered + "\' doesn't exist, please try again!", formoutput);
+        }
+      })
+    } else {
+      //Update the user interface if they haven't entered anything.
+      request.updateSingleOutput("Please make sure a search type and detail has been entered.", formoutput);
+    }
+  });
+  </script>
+
+</body>
+</html>

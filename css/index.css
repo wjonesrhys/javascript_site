@@ -1,0 +1,304 @@
+/*
+The following CSS is to reset and then layout the basic structure for every page.
+This includes, most importantly, the general styling, header and footer.
+*/
+
+/* CSS Reset */
+
+/*
+Code to perform a CSS reset, this resets any default styling performed by the browser.
+It was taken from the below website and was written by E.A Meyer 26-01-2011
+Accessed 17-10-2019
+https://learn.shayhowe.com/html-css/building-your-first-web-page/#using-css-resets
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+body {
+  line-height: 1;
+}
+ol, ul {
+  list-style: none;
+}
+blockquote, q {
+  quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: '';
+  content: none;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* Clearfix */
+
+/*
+Code to perform a Clearfix, this allows me to contain any floats I've used.
+It was taken from the below website and slightly adapted by removing the zoom property,
+written by Shay Howe 01-01-2013.
+Accessed 17-10-2019
+https://learn.shayhowe.com/html-css/opening-the-box-model/
+*/
+
+.group:before, .group:after {
+  content: "";
+  display: table;
+}
+.group:after {
+  clear: both;
+}
+.group {
+  clear: both;
+}
+
+/* Box-Sizing */
+
+/*
+Code to make the default box-sizing to border-box and provide support for older browsers.
+It was taken from the below website.
+written by Shay Howe 01-01-2013.
+Accessed 17-10-2019
+https://learn.shayhowe.com/html-css/positioning-content/
+*/
+
+*, *:before, *:after {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+/* Container */
+
+.container {
+  margin: 0 auto;
+  max-width: 1200px;
+  height:100%
+}
+
+
+/*
+Typography
+Below I've set the font for the page, with back-up stylings.
+All sizes have to be re-set because of the CSS Reset, including the line-heights and font-size.
+*/
+
+/* Body */
+body {
+  background: #791B99;
+  color: #fff;
+  font: 400 16px/22px "Quattrocento Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Headers and Paragraphs */
+
+h1, h2, h3, h5, h6 {
+  font-family: "Quattrocento", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3, h5, p {
+  color: #9A55B2;
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 2.375rem;
+  line-height: 2.75rem;
+}
+
+h2 {
+  font-size: 2.125rem;
+  line-height: 2.75rem;
+}
+
+h3 {
+  font-size: 1.75rem;
+  line-height: 2rem;
+}
+
+h4 {
+  color: #791b99;
+}
+
+h5 {
+  font-size: 0.875rem;
+}
+
+p, label {
+  font-size: 1.25rem;
+  line-height:1.625rem;
+}
+
+h3, p {
+  color: #fff;
+}
+
+/* Links */
+
+a {
+  color: #fff;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #f2f2f2;
+}
+
+/* Header */
+
+header {
+  padding: 20px 8px;
+}
+
+/*
+Row Formatting
+
+Mainrow is the row containing the main header and information.
+Row and row-alt are used to separate out the content but both different colour schemes.
+*/
+
+.mainrow {
+  background-color: #9A55B2;
+}
+
+.mainrow h2, .sub_heading {
+  color: #fff;
+}
+
+.row {
+  background-color: #A993FF;
+}
+
+#task_header {
+  color:#fff;
+}
+
+.row-alt {
+  background-color: #fff;
+}
+
+.row-alt p {
+  color: #9A55B2;
+}
+
+.output, .data, .mainrow {
+  min-height:9em;
+}
+
+.data {
+  background-color: #dcd3ff;
+  color:#791b99;
+}
+
+.input {
+  min-height:12em;
+}
+
+.mainrow > *, .row > *, .row-alt > * {
+  padding: 10px 8px;
+}
+
+/* Forms */
+
+form {
+  max-width: 100%;
+  display: block;
+  border: 1px solid #d3d3d3;
+  border-radius: 5px;
+  margin: 1em 0.5em;
+  padding : 10px;
+  color: #9A55B2;
+}
+
+p {
+  margin: 0;
+  padding: 0;
+}
+
+label {
+  display: block;
+  margin: 0 0 0.5em 0;
+  font-size: 16px;
+}
+
+input, select {
+  margin: 0 0 0.3em 0.3em;
+  border: 1px solid grey;
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: grey;
+  font-size: 16px;
+}
+
+input, select {
+  width : 20em;
+}
+
+#task_selected {
+  margin: 0 0 0.5em 0;
+}
+
+.button {
+  cursor: pointer;
+  display: block;
+  outline: none;
+  color: #fff;
+  background-color: #9A55B2;
+  border: none;
+  border-radius: 15px;
+  width : auto;
+  margin-top: 10px;
+}
+
+.button:hover {
+  background-color: #854a9b
+}
+
+.button:active {
+  background-color: #854a9b;
+}
+
+/* Footer */
+
+footer {
+  min-height: 4em;
+}
+
+footer p {
+  margin-top:2em;
+  margin-left:0.4em;
+  text-align: right;
+}
+
+.primary-footer {
+  margin: 0 0.4em;
+  padding: 0.4em 0;
+}

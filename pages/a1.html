@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>University of PontyBridge</title>
+
+  <link rel="stylesheet" href="../css/index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento:400,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <header class="primary-header">
+    <div class="container">
+      <h1 class="logo">
+        <a href="../index.html">University of PontyBridge</a>
+      </h1>
+    </div>
+  </header>
+
+  <section class="mainrow">
+    <div class="container">
+      <h2>Library Interface</h2>
+      <h3 class="sub_heading">Below you can choose from a selection of tasks for this application to perform. </h3>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="container">
+      <h4 id="task_header">Select which task you would like to execute: </h4>
+      <label for="task_selected">
+        <select name="task_selected" id="task_selected" style="display:block;" onchange="location = this.value;">
+          <option disabled value> -- select an option -- </option>
+          <optgroup label="Users">
+            <option value="u1.html">Add a User</option>
+            <option value="u2.html">Get User's Details</option>
+            <option value="u3.html">Update a User</option>
+            <option value="u4.html">Remove User</option>
+          </optgroup>
+          <optgroup label="Books">
+            <option value="b1.html">Add a Book</option>
+            <option value="b2.html">Get Book Details</option>
+            <option value="b3.html">Remove a Book</option>
+          </optgroup>
+          <optgroup label="Loans">
+            <option value="l1.html">Loan a Book</option>
+            <option value="l2.html">Get User's Current Loans</option>
+            <option value="l3.html">Get User Borrowing a Book</option>
+          </optgroup>
+          <optgroup label="Bookings">
+            <option value="bk1.html">Book a Room</option>
+            <option value="bk2.html">Get User's Current Room Booking</option>
+            <option value="bk3.html">Remove Booking</option>
+            <option value="bk4.html">Get Room Times Available</option>
+          </optgroup>
+          <optgroup label="Authors">
+            <option selected value="a1.html">Add an Author</option>
+          </optgroup>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="row-alt forminput">
+    <div class="container">
+      <h4>Form:</h4>
+      <form>
+        <label for="name">Enter the name of the author to add to the database:</label>
+        <input type="text" id="name" />
+        <input type="button" class="button" value="Add Author to the Database" id="add_author">
+      </form>
+    </div>
+  </section>
+
+  <section class="row output">
+    <div class="container">
+      <h3>Output:</h3>
+      <!-- Used to give the result of the request. -->
+      <ul id="formoutput">
+        <li>Output from any requests will be shown here.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row data">
+    <div class="container">
+      <h4>Database Information:</h4>
+      <!-- Used for any data that might be helpful to the user. -->
+      <ul id="allauthors">
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>University Of PontyBridge</p>
+    </div>
+  </footer>
+
+  <script src="../js/request.js"></script>
+  <script>
+  //Get any unordered lists so that they can be updated when necessary
+  var formoutput = document.getElementById('formoutput');
+
+  //Change the URL based on the task currently selected using an event listener.
+  var task_selected = document.getElementById("task_selected");
+  task_selected.addEventListener("change", function(){
+    window.location.href = task_selected.value;
+  });
+
+  //An event listener added to the Add Author button to action when clicked.
+  document.querySelector('#add_author').addEventListener('click', function(){
+    //Get the inputs from the form.
+    var name = document.getElementById("name").value;
+
+    //Set up the parameters to search for an author by their name.
+    let byAuthor = {
+      type : "author",
+      name : name
+    };
+
+    //Set up the parameters to add an author to the database.
+    let authorToAdd = {
+      name : name
+    }
+
+    //Check for valid form inputs.
+    if (name) {
+      //Search for an already existing author.
+      request.searchDatabase(byAuthor)
+      .then(function(authors){
+        var author_entries = JSON.parse(authors);
+        //If the author doesn't already exist, add the author and update the UI with the result.
+        if (author_entries.length === 0) {
+          request.makeAPIRequest("POST", "/authors", authorToAdd)
+          .then(function(author_added){
+            var author = JSON.parse(author_added);
+            request.updateSingleOutput("Author: " + author.name + ", has been added.", formoutput);
+            request.updateData("authors", allauthors);
+          });
+        } else {
+          //Update the UI with the following text if the author already exists.
+          request.updateSingleOutput("The author already exists in the system.", formoutput)
+        }
+      })
+    } else {
+      //Update the UI with the following text if the inputted text is invalid.
+      request.updateSingleOutput("Please make sure a name has been entered.", formoutput);
+    }
+  });
+
+  //Add the current authors to the user interface when the page is loaded to aid the user.
+  request.updateData("authors", allauthors);
+  </script>
+
+</body>
+</html>
